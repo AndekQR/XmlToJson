@@ -10,5 +10,8 @@ enum class XmlTagsRegex(val regex: Regex) {
     OPEN_NAMESPACE_TAG(Regex("<[^/<?>]+:[^<?>]+>")), //<wydawca:opis>
     INLINE_CLOSE_TAG(Regex("/>")),
     ATRIBUTE(Regex("(\\S+)=[\"']?((?:.(?![\"']?\\s+(?:\\S+)=|\\s*/?[>\"']))+.)[\"']?")),
+    PROLOG(Regex("<\\?xml")),
+    COMMENT(Regex("<!--")),
+    TAG(Regex("<[^?!/ :>]+"))
 
 }

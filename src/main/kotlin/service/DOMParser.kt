@@ -7,7 +7,7 @@ import org.w3c.dom.Node
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
 
-class Parser {
+class DOMParser {
 
     private val visitors: ArrayList<NodeVisitor> = ArrayList()
 

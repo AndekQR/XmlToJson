@@ -1,13 +1,14 @@
 package controller
 
-import org.w3c.dom.Node
 import service.JsonVisitor
-import service.Parser
+import service.DOMParser
+import service.RegexParser
 
 class MainController {
 
     fun getRootNode(path: String): JsonVisitor {
-       val parser = Parser()
+       val parser = DOMParser()
+        RegexParser(path)
         val jsonVisitor = JsonVisitor()
         parser.addVisitor(jsonVisitor)
         parser.parse(path)
