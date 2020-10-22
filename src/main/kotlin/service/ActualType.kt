@@ -4,8 +4,10 @@ import helper.XmlTagType
 
 class ActualType {
     private var actualType = XmlTagType.UNMACHED
+    private var lastType = XmlTagType.UNMACHED
 
     fun set(tag: XmlTagType) {
+        this.lastType = actualType
         this.actualType = tag
     }
 
@@ -16,5 +18,9 @@ class ActualType {
 
     fun get(): XmlTagType {
         return this.actualType
+    }
+
+    fun getLastTag(): XmlTagType {
+        return lastType
     }
 }

@@ -1,22 +1,22 @@
 package service
 
+import model.Node
 import model.NodeVisitor
-import org.w3c.dom.Node
 
-class JsonVisitor: NodeVisitor {
+class JsonCreator: NodeVisitor {
 
     private val json = StringBuilder()
 
     init {
-        json.append("{")
+        json.append("{\n")
     }
 
     override fun visit(node: Node) {
-        json.append(node.nodeName+": {")
+        json.append("\""+node.name+"\""+": {\n")
     }
 
     override fun afterChildVisit(node: Node) {
-        json.append("}")
+        json.append("}\n")
     }
 
     fun getJsonString(): String {

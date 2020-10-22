@@ -5,16 +5,17 @@ import helper.XmlTagType
 
 class TagTypeDetector(firstCharOfXml: Char) {
 
-    private var lastCharacter: Char = firstCharOfXml
     private var typeToShow = XmlTagType.UNMACHED
-
-    //    private val firstTagNameCharacterRegex = Regex("([A-Z]|[a-z]|_|[^?<> /!]|-)")
-    private val textRegex = Regex("[^/><?!]")
 
     private val firstCharOfTagNameRegex = Regex("[A-Z]|[a-z]|_")
     private val restChrsOfTagNameRegex = Regex("[A-Z]|[a-z]|\\d|_|.|-")
+
+    //sprawdzone elementy
     private var checked = ArrayList<Char>()
     val actualTag = ActualType()
+
+    // pomoga gdy jest wiele atrybutów
+    private var inAttributeValue = false
 
     init {
         actualTag.set(XmlTagType.UNMACHED)
@@ -42,7 +43,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
             }
             XmlTagType.TAG_NAME -> {
                 setTypeToShow(XmlTagType.TAG_NAME, char)
-                if(isAttributeName(char)) {
+                if (isAttributeName(char)) {
                     actualTag.set(XmlTagType.ATTRIBUTE_NAME)
                     setTypeToShow(XmlTagType.ATTRIBUTE_NAME, char)
                 }
@@ -53,7 +54,8 @@ class TagTypeDetector(firstCharOfXml: Char) {
 
             XmlTagType.ATTRIBUTE_NAME -> {
                 setTypeToShow(XmlTagType.ATTRIBUTE_NAME, char)
-                if(isAttributeValue(char)) {
+                if (isAttributeValue(char)) {
+                    inAttributeValue = true
                     actualTag.set(XmlTagType.ATTRIBUTE_VALUE)
                     setTypeToShow(XmlTagType.ATTRIBUTE_VALUE, char)
                 }
@@ -61,7 +63,9 @@ class TagTypeDetector(firstCharOfXml: Char) {
 
             XmlTagType.ATTRIBUTE_VALUE -> {
                 setTypeToShow(XmlTagType.ATTRIBUTE_VALUE, char)
-                if (isAttributeName(char)) {
+                if(inAttributeValue && char == '"')
+                    inAttributeValue = false
+                if (isAttributeName(char) && !inAttributeValue) {
                     actualTag.set(XmlTagType.ATTRIBUTE_NAME)
                     setTypeToShow(XmlTagType.ATTRIBUTE_NAME, char)
                 }
@@ -93,7 +97,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
 
 
     private fun isItXmlSymbol(char: Char): Boolean {
-        when(char) {
+        when (char) {
             XmlSymbols.END_TAG.value,
             XmlSymbols.OPEN_TAG.value,
             XmlSymbols.SLASH.value,
@@ -104,11 +108,14 @@ class TagTypeDetector(firstCharOfXml: Char) {
     }
 
     private fun setTypeToShow(type: XmlTagType, char: Char) {
-        if((char =='=' || char  == '"')) this.typeToShow = XmlTagType.UNMACHED
+        // special conditions
+        if ((char == '=' || char == '"')) this.typeToShow = XmlTagType.UNMACHED
         else if (actualTag.isTag(XmlTagType.TAG_NAME) && (char == XmlSymbols.SLASH.value)) this.typeToShow = XmlTagType.INLINE_CLOSE_TAG
-        else if(actualTag.isTag(XmlTagType.COMMENT) && char == '-')this.typeToShow = XmlTagType.UNMACHED
-        else if(this.typeToShow == XmlTagType.TAG_NAME && char == ' ') this.typeToShow = XmlTagType.UNMACHED
-        else if(isItXmlSymbol(char)) this.typeToShow = XmlTagType.UNMACHED
+        else if (actualTag.isTag(XmlTagType.COMMENT) && char == '-') this.typeToShow = XmlTagType.UNMACHED
+        else if (this.typeToShow == XmlTagType.TAG_NAME && char == ' ') this.typeToShow = XmlTagType.UNMACHED
+        else if (typeOfCurrent() == XmlTagType.TAG_VALUE.type && char == XmlSymbols.COMMENT.value) this.typeToShow = XmlTagType.TAG_VALUE
+
+        else if (isItXmlSymbol(char)) this.typeToShow = XmlTagType.UNMACHED
         else this.typeToShow = type
     }
 
@@ -133,14 +140,14 @@ class TagTypeDetector(firstCharOfXml: Char) {
     }
 
     private fun isCloseTag(char: Char): Boolean {
-        if(char == XmlSymbols.SLASH.value && checked.last() == XmlSymbols.OPEN_TAG.value) {
+        if (char == XmlSymbols.SLASH.value && checked.last() == XmlSymbols.OPEN_TAG.value) {
             return true
         }
         return false
     }
 
     private fun isInlineClose(char: Char): Boolean {
-        if(char == XmlSymbols.END_TAG.value && checked.last() == XmlSymbols.SLASH.value) {
+        if (char == XmlSymbols.END_TAG.value && checked.last() == XmlSymbols.SLASH.value) {
             return true
         }
         return false
@@ -181,7 +188,6 @@ class TagTypeDetector(firstCharOfXml: Char) {
         }
         return false
     }
-
 
     fun typeOfCurrent(): String {
         return this.typeToShow.type
