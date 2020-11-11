@@ -1,23 +1,36 @@
 package controller
 
-import service.JsonCreator
-import service.DOMParser
-import service.MyJsonCreator
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
+import service.XmlFormatter
 import service.XmlParser
+
 
 class MainController {
 
-    fun getRootNode(path: String): JsonCreator {
-//       val parser = DOMParser()
-        val xmlParser = XmlParser()
-        val jsonVisitor = JsonCreator()
-        val parseFile = xmlParser.parseFile(path)
-        parseFile.addVisitor(jsonVisitor)
-        parseFile.initVisitorsActions()
-        MyJsonCreator(parseFile)
+    private val xmlParser = XmlParser()
 
-//        parser.addVisitor(jsonVisitor)
-//        parser.parse(path)
-        return jsonVisitor
+    fun getJson(path: String, prettyFormat: Boolean): String {
+        xmlParser.parseFile(path)
+        val json = this.xmlParser.getJson()
+        return if (prettyFormat) this.getPrettyFormattedJson(json)
+        else json
+    }
+
+    private fun getPrettyFormattedJson(json: String): String {
+        val jsonObject = JsonParser.parseString(json).asJsonObject
+        val gson = GsonBuilder().setPrettyPrinting().create()
+        return gson.toJson(jsonObject)
+    }
+
+    fun convertXmlStringToJson(xml: String, prettyFormat: Boolean): String {
+        this.xmlParser.parseXmlString(xml)
+        val json = this.xmlParser.getJson()
+        return if (prettyFormat) this.getPrettyFormattedJson(json)
+        else json
+    }
+
+    fun getFormattedXml(): String {
+        return XmlFormatter.format(xmlParser.getXmlString())
     }
 }

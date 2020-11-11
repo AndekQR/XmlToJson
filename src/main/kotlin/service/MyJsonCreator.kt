@@ -1,17 +1,14 @@
 package service
 
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonParser
 import model.Node
-
 import java.util.function.Function
 import java.util.stream.Collectors
-
 
 
 class MyJsonCreator(private val treeNode: TreeNode) {
 
     private var json: StringBuilder = StringBuilder()
+    private var wasLastCloseBrace: Boolean = false;
 
     init {
         this.generateJSON()
@@ -21,25 +18,23 @@ class MyJsonCreator(private val treeNode: TreeNode) {
         addOpenBrace()
         treeNode.getRootNode()?.let { search(it) }
         addCloseBrace(true)
-//        val gson = GsonBuilder().setPrettyPrinting().create()
-//        val jp = JsonParser.parseString(json.toString())
-//        println(gson.toJson(jp))
         println(json.toString())
     }
 
     private fun search(node: Node, inTable: Boolean = false) {
         addNode(node, inTable)
+        //lista z list z węzłami. w liście wewnętrznej jest tyle wezłów z danym imieniem ile jego powtórzeń
         val sameNameChilds = node.childs.stream()
-                .collect(Collectors.groupingBy(Node::name, Collectors.mapping(Function.identity(), Collectors.toList())))
-                .entries
-                .stream()
-                .map { entry -> entry.value }
-                .collect(Collectors.toList())
+            .collect(Collectors.groupingBy(Node::name, Collectors.mapping(Function.identity(), Collectors.toList())))
+            .entries
+            .stream()
+            .map { entry -> entry.value }
+            .collect(Collectors.toList())
 
-        for(i in 0 until sameNameChilds.size) {
-            if(sameNameChilds[i].size == 1) {
+        for (i in 0 until sameNameChilds.size) {
+            if (sameNameChilds[i].size == 1) {
                 search(sameNameChilds[i].first())
-            } else if(sameNameChilds[i].size > 1) {
+            } else if (sameNameChilds[i].size > 1) {
                 addTable(sameNameChilds[i].toList())
             }
         }
@@ -52,40 +47,61 @@ class MyJsonCreator(private val treeNode: TreeNode) {
     }
 
     private fun addTable(elements: List<Node>) {
+        this.wasLastCloseBrace = false
         json.append("\"" + elements[0].name + "\": ")
         addOpenTableBrace()
-        for(i in elements.indices) {
+        for (i in elements.indices) {
             search(elements[i], true)
         }
         addCloseTableBrace()
     }
 
     private fun addNode(node: Node, inTable: Boolean) {
-        if(!inTable) {
-            json.append("\"" + node.name + "\":" )
+        this.wasLastCloseBrace = false
+        if (!inTable) {
+            json.append("\"" + node.name + "\":")
         }
         addOpenBrace()
-        node.value.ifPresent { json.append("\"value\": \"$it\",\n") }
+        node.value.ifPresent { json.append("\"value\": \"$it\"") }
 
-        node.atributes.forEach{
-            json.append("\"_${it.key}\": \"${it.value}\",\n")
+        node.atributes.forEach {
+            json.append("\"_${it.key}\": \"${it.value}\",")
         }
     }
 
     private fun addOpenBrace() {
-        json.append("{\n")
+        json.append("{")
     }
+
     private fun addCloseBrace(last: Boolean = false) {
-        json.append("}\n")
-        if(!last) addComma()
+        if (wasLastCloseBrace) {
+            deleteLastAddedComma()
+        }
+        wasLastCloseBrace = true
+        json.append("}")
+        if (!last) addComma()
     }
+
+    private fun deleteLastAddedComma() {
+        val c = json[json.lastIndex]
+        if (c == ',') {
+            json.deleteCharAt(json.lastIndex)
+        }
+    }
+
     private fun addOpenTableBrace() {
-        json.append("[\n")
+        json.append("[")
     }
+
     private fun addCloseTableBrace() {
-        json.append("]\n")
+        if (wasLastCloseBrace) {
+            deleteLastAddedComma()
+        }
+        wasLastCloseBrace = true
+        json.append("]")
     }
+
     private fun addComma() {
-        json.append(",\n")
+        json.append(",")
     }
 }
