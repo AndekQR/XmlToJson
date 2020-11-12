@@ -11,7 +11,8 @@ class XmlParser {
 
     private var treeNode: TreeNode? = null
     private lateinit var reader: BufferedReader
-    private var xmlString: String = ""
+    private var xmlStringFormatted: String = ""
+    private var xmlStringTrimed: String = ""
 
     private fun prepareData(data: String): String {
         return data
@@ -25,12 +26,14 @@ class XmlParser {
         this.reader = Files.newBufferedReader(Paths.get(path))
     }
 
-    fun getXmlString(): String {
-        return this.xmlString
+    fun getXmlString(formatted: Boolean): String {
+        return if(formatted) this.xmlStringFormatted
+        else xmlStringTrimed
     }
 
     fun parseXmlString(xml: String) {
-        val parse = this.parse(xml)
+        this.saveXmlString(xml)
+        val parse = this.parse(this.xmlStringTrimed)
         this.treeNode = parse
     }
 
@@ -39,20 +42,27 @@ class XmlParser {
             val jsonCreator = MyJsonCreator(it)
             return jsonCreator.getJSON()
         }
-        throw RuntimeException("First, parse XML")
+        return ""
     }
 
     fun getTreeNode(): Optional<TreeNode> {
         return Optional.ofNullable(this.treeNode)
     }
 
+    private fun saveXmlString(xml: String) {
+        this.xmlStringFormatted = xml
+        val xml = this.prepareData(xml)
+        this.xmlStringTrimed = xml
+    }
+
     fun parseFile(path: String) {
         this.initFile(path)
-        val xml = this.prepareData(reader.readText())
+        val xmlString = reader.readText()
+        this.saveXmlString(xmlString)
+        val xml = this.xmlStringTrimed
         if (xml.isBlank()) throw RuntimeException("File missing or corrupt")
-
-        this.xmlString = xml
         this.treeNode = this.parse(xml)
+        this.reader.close()
     }
 
     private fun parse(xml: String): TreeNode {

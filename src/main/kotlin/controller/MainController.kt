@@ -2,8 +2,13 @@ package controller
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
+import org.xml.sax.SAXException
 import service.XmlFormatter
 import service.XmlParser
+import service.XmlValidator
+import java.io.File
+import javax.xml.transform.TransformerException
+import kotlin.jvm.Throws
 
 
 class MainController {
@@ -30,7 +35,21 @@ class MainController {
         else json
     }
 
-    fun getFormattedXml(): String {
-        return XmlFormatter.format(xmlParser.getXmlString())
+    fun getXmlString(): String {
+        return try {
+            XmlFormatter.format(xmlParser.getXmlString(false))
+        }catch (e: TransformerException){
+            this.xmlParser.getXmlString(true);
+        }
+    }
+
+    @Throws(SAXException::class)
+    fun validateXml(xml: String) {
+        XmlValidator.validate(xml)
+    }
+
+    @Throws(SAXException::class)
+    fun validateXml(file: File) {
+        XmlValidator.validate(file)
     }
 }

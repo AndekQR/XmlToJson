@@ -3,6 +3,7 @@ package view;
 import controller.MainController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
@@ -12,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,6 +30,7 @@ public class MainView {
 
     private final MainController mainController;
 
+    private TextArea errorArea;
     private TextArea jsonViewer;
     private TextArea xmlViewer;
     private BorderPane container;
@@ -83,7 +86,7 @@ public class MainView {
     }
 
     private HBox controlPanel() {
-        HBox hBox = new HBox();
+        HBox leftHbox = new HBox();
 
         Button chooseFileButton = this.getStyledButton("Load file");
         Button parseButton = this.getStyledButton("Parse to JSON");
@@ -93,10 +96,19 @@ public class MainView {
             File file = showFileChooser("*.xml");
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             executorService.submit(() -> {
-                String json = this.mainController.getJson(file.getAbsolutePath(), true);
-                String xml = this.mainController.getFormattedXml();
+                this.jsonViewer.clear();
+                this.errorArea.clear();
+                String json = "";
+                try {
+                    json = this.mainController.getJson(file.getAbsolutePath(), true);
+                    String xml = this.mainController.getXmlString();
+                    this.xmlViewer.setText(xml);
+                    mainController.validateXml(file);
+                } catch (RuntimeException | SAXException e) {
+                    this.errorArea.setText(e.getLocalizedMessage());
+                    return;
+                }
                 this.jsonViewer.setText(json);
-                this.xmlViewer.setText(xml);
             });
             executorService.shutdown();
         });
@@ -105,9 +117,19 @@ public class MainView {
             String xmlText = this.xmlViewer.getText();
             if (!xmlText.isEmpty()) {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-                String json = this.mainController.convertXmlStringToJson(xmlText, true);
-                this.jsonViewer.setText(json);
+                executorService.submit(() -> {
+                    this.jsonViewer.clear();
+                    this.errorArea.clear();
+                    String json = this.mainController.convertXmlStringToJson(xmlText, true);
+                    try {
+                        String xml = this.mainController.getXmlString();
+                        this.mainController.validateXml(xml);
+                    } catch (SAXException e) {
+                        this.errorArea.setText(e.getLocalizedMessage());
+                        return;
+                    }
+                    this.jsonViewer.setText(json);
+                });
 
                 executorService.shutdown();
             }
@@ -124,11 +146,25 @@ public class MainView {
             }
         });
 
-        hBox.getChildren().addAll(chooseFileButton, parseButton, saveJsonFile);
-        return hBox;
+        this.errorArea = new TextArea();
+        errorArea.setEditable(false);
+        this.errorArea.setPrefHeight(CONTROL_BAR_HEIGHT);
+        this.errorArea.setPrefWidth(WIDTH >> 1);
+
+        leftHbox.getChildren().addAll(chooseFileButton, parseButton, saveJsonFile);
+        leftHbox.setAlignment(Pos.BASELINE_LEFT);
+        leftHbox.setPrefWidth(WIDTH >> 1);
+        HBox rightHBox = new HBox();
+        rightHBox.getChildren().add(errorArea);
+        rightHBox.setAlignment(Pos.BASELINE_RIGHT);
+
+        HBox parentHb = new HBox();
+        parentHb.getChildren().addAll(leftHbox, rightHBox);
+        parentHb.setAlignment(Pos.CENTER);
+        return parentHb;
     }
 
-    private File showFileChooser(String ...extensions) {
+    private File showFileChooser(String... extensions) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose file");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML files", extensions));

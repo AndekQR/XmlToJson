@@ -1,25 +1,22 @@
 package service
 
+import java.io.StringReader
 import java.io.StringWriter
-import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
-import javax.xml.transform.Transformer
+import javax.xml.transform.TransformerException
 import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
-
+import javax.xml.transform.stream.StreamSource
+import kotlin.jvm.Throws
 
 class XmlFormatter {
     /*
     * tylko formatowanie jest wykonywane za pomoca wbudowanych narzedzi
     */
     companion object {
+        @Throws(TransformerException::class)
         fun format(xmlString: String): String {
-            val factory = DocumentBuilderFactory.newInstance()
-            val builder = factory.newDocumentBuilder()
-            val inputStream = xmlString.byteInputStream()
-            val document = builder.parse(inputStream)
-            document.documentElement.normalize()
+            val xmlInput = StreamSource(StringReader(xmlString))
 
             val tform = TransformerFactory.newInstance()
             val newTransformer = tform.newTransformer()
@@ -28,7 +25,8 @@ class XmlFormatter {
             newTransformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
 
             val result = StreamResult(StringWriter())
-            newTransformer.transform(DOMSource(document), result)
+            newTransformer.transform(xmlInput, result)
+
             return result.writer.toString()
         }
     }
