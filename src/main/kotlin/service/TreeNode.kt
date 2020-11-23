@@ -5,8 +5,10 @@ import java.util.*
 
 class TreeNode {
 
-    private var rootNode: Node? = null
+    var rootNode: Node? = null
+        private set
     private var lastAddNode: Node? = null
+
 
     fun addChild(node: Node) {
         if (rootNode == null) {
@@ -33,9 +35,5 @@ class TreeNode {
         if (lastAddNode != null) {
             return lastAddNode as Node
         } else throw RuntimeException("No nodes")
-    }
-
-    fun getRootNode(): Node? {
-        return rootNode
     }
 }

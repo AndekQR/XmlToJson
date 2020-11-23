@@ -15,6 +15,7 @@ class MainController {
 
     private val xmlParser = XmlParser()
 
+    @Throws(StackOverflowError::class)
     fun getJson(path: String, prettyFormat: Boolean): String {
         xmlParser.parseFile(path)
         val json = this.xmlParser.getJson()

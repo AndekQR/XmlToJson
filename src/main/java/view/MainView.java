@@ -3,13 +3,14 @@ package view;
 import controller.MainController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -35,6 +36,8 @@ public class MainView {
     private TextArea xmlViewer;
     private BorderPane container;
     private Stage stage;
+
+    private Boolean onLineJson = false;
 
     public MainView(MainController mainController) {
         this.mainController = mainController;
@@ -65,7 +68,7 @@ public class MainView {
             this.jsonViewer = this.jsonViewComponent("");
             this.xmlViewer = this.xmlViewComponent("");
             this.jsonViewer.setEditable(false);
-            hBox.getChildren().addAll(xmlViewer, jsonViewer);
+            hBox.getChildren().addAll(makeLabeledTextArea("XML file",xmlViewer), makeLabeledTextArea("Converted to JSON", jsonViewer));
             Platform.runLater(() -> {
                 this.container.setCenter(hBox);
             });
@@ -76,6 +79,15 @@ public class MainView {
         });
 
         executorService.shutdown();
+    }
+
+    private VBox makeLabeledTextArea(String label, TextArea area) {
+        VBox vBox = new VBox();
+        Label label1 = new Label(label);
+        label1.setPrefWidth(WIDTH >> 1);
+        label1.setAlignment(Pos.CENTER);
+        vBox.getChildren().addAll(label1, area);
+        return vBox;
     }
 
     private Button getStyledButton(String name) {
@@ -96,19 +108,32 @@ public class MainView {
             File file = showFileChooser("*.xml");
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             executorService.submit(() -> {
+                long startTime = System.currentTimeMillis();
                 this.jsonViewer.clear();
                 this.errorArea.clear();
                 String json = "";
                 try {
-                    json = this.mainController.getJson(file.getAbsolutePath(), true);
+                    try{
+                        if(this.onLineJson) {
+                            json = this.mainController.getJson(file.getAbsolutePath(), false);
+                        } else {
+                            json = this.mainController.getJson(file.getAbsolutePath(), true);
+                        }
+                    } catch (StackOverflowError error) {
+                        this.errorArea.setText("Stack overflow error");
+                        return;
+                    }
                     String xml = this.mainController.getXmlString();
                     this.xmlViewer.setText(xml);
+                    this.errorArea.setText(file.getAbsolutePath());
                     mainController.validateXml(file);
                 } catch (RuntimeException | SAXException e) {
                     this.errorArea.setText(e.getLocalizedMessage());
                     return;
                 }
                 this.jsonViewer.setText(json);
+                long stopTime = System.currentTimeMillis();
+                this.errorArea.appendText("\nExecution time: "+(stopTime - startTime)+" ms");
             });
             executorService.shutdown();
         });
@@ -118,9 +143,15 @@ public class MainView {
             if (!xmlText.isEmpty()) {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(() -> {
+                    long start = System.currentTimeMillis();
                     this.jsonViewer.clear();
                     this.errorArea.clear();
-                    String json = this.mainController.convertXmlStringToJson(xmlText, true);
+                    String json = "";
+                    if (this.onLineJson) {
+                        json = this.mainController.convertXmlStringToJson(xmlText, false);
+                    } else {
+                        json = this.mainController.convertXmlStringToJson(xmlText, true);
+                    }
                     try {
                         String xml = this.mainController.getXmlString();
                         this.mainController.validateXml(xml);
@@ -129,6 +160,8 @@ public class MainView {
                         return;
                     }
                     this.jsonViewer.setText(json);
+                    long stop = System.currentTimeMillis();
+                    this.errorArea.setText("Execution time: "+(stop-start)+" ms");
                 });
 
                 executorService.shutdown();
@@ -151,7 +184,14 @@ public class MainView {
         this.errorArea.setPrefHeight(CONTROL_BAR_HEIGHT);
         this.errorArea.setPrefWidth(WIDTH >> 1);
 
-        leftHbox.getChildren().addAll(chooseFileButton, parseButton, saveJsonFile);
+        CheckBox oneLineJsonCheckbox = new CheckBox("One line JSON");
+        oneLineJsonCheckbox.setSelected(false);
+        oneLineJsonCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            this.onLineJson = newValue;
+        });
+        oneLineJsonCheckbox.setPadding(new Insets(0, 0,0,20));
+
+        leftHbox.getChildren().addAll(chooseFileButton, parseButton, saveJsonFile, oneLineJsonCheckbox);
         leftHbox.setAlignment(Pos.BASELINE_LEFT);
         leftHbox.setPrefWidth(WIDTH >> 1);
         HBox rightHBox = new HBox();
@@ -180,9 +220,6 @@ public class MainView {
         jsonTextArea.setMaxHeight(HEIGHT - CONTROL_BAR_HEIGHT);
         jsonTextArea.setText(json);
 
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setContent(jsonTextArea);
-        scrollPane.setFitToWidth(false);
 
         return jsonTextArea;
     }

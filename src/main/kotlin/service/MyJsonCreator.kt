@@ -16,7 +16,7 @@ class MyJsonCreator(private val treeNode: TreeNode) {
 
     private fun generateJSON() {
         addOpenBrace()
-        treeNode.getRootNode()?.let { search(it) }
+        treeNode.rootNode?.let { search(it) }
         addCloseBrace(true)
         println(json.toString())
     }

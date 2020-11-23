@@ -19,6 +19,7 @@ class XmlParser {
             .trim()
             .replace(System.lineSeparator(), "")
             .replace("\t", "")
+            .replace("\n", "")
             .replace("> +".toRegex(), ">")
     }
 
@@ -51,8 +52,7 @@ class XmlParser {
 
     private fun saveXmlString(xml: String) {
         this.xmlStringFormatted = xml
-        val xml = this.prepareData(xml)
-        this.xmlStringTrimed = xml
+        this.xmlStringTrimed = this.prepareData(xml)
     }
 
     fun parseFile(path: String) {
