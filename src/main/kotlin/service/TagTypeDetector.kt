@@ -5,13 +5,20 @@ import helper.XmlTagType
 
 class TagTypeDetector(firstCharOfXml: Char) {
 
-    private var typeToShow = XmlTagType.UNMACHED
+    //typ pokazywany 'na zewnątrz klasy'
+    private var typeToShow: XmlTagType = XmlTagType.UNMACHED
 
     private val firstCharOfTagNameRegex = Regex("[A-Z]|[a-z]|_")
     private val restChrsOfTagNameRegex = Regex("[A-Z]|[a-z]|\\d|_|.|-")
 
     //sprawdzone elementy
     private var checked = ArrayList<Char>()
+
+    /**
+     * typ aktulanego przeglądanego tagu, zmienna pomocnicza
+     * różni się od typeToShow tym że dla znaków np. '=', '"' nie jest ustawiana na UNMACHED
+     * z koleji zmienna typeToShow jest ustawiany na UNMACHED
+     */
     val actualTag = ActualType()
 
     // pomoga gdy jest wiele atrybutów
@@ -23,7 +30,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
     }
 
 
-    fun checkV2(char: Char) {
+    fun check(char: Char) {
         if (typeToShow == XmlTagType.UNMACHED) {
             when {
                 isProlog(char) -> actualTag.set(XmlTagType.PROLOG)
@@ -35,12 +42,14 @@ class TagTypeDetector(firstCharOfXml: Char) {
         }
 
         when (this.actualTag.get()) {
+            //gdy wejdziemy do prologu to czytamy tutaj znaki aż do zakończenia prologu
             XmlTagType.PROLOG -> {
                 setTypeToShow(XmlTagType.PROLOG, char)
                 if (isPrologEnd(char)) {
                     actualTag.set(XmlTagType.UNMACHED)
                 }
             }
+            //gdy wejdziemy w tag, możemy mieć jego atrybut lub może ssię konczyć 'inline'
             XmlTagType.TAG_NAME -> {
                 setTypeToShow(XmlTagType.TAG_NAME, char)
                 if (isAttributeName(char)) {
@@ -51,7 +60,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
                     setTypeToShow(XmlTagType.INLINE_CLOSE_TAG, char)
                 }
             }
-
+            //gdy jesteśmy w atrybucie tagu, to po nim wystąpu wartość atrybutu
             XmlTagType.ATTRIBUTE_NAME -> {
                 setTypeToShow(XmlTagType.ATTRIBUTE_NAME, char)
                 if (isAttributeValue(char)) {
@@ -60,7 +69,8 @@ class TagTypeDetector(firstCharOfXml: Char) {
                     setTypeToShow(XmlTagType.ATTRIBUTE_VALUE, char)
                 }
             }
-
+            //gdy jesteśmy w wartości atrybutu to po nim może wystąpić astępny atrybut
+            //wyjście z tego tagu relizowane jest przez special conditions
             XmlTagType.ATTRIBUTE_VALUE -> {
                 setTypeToShow(XmlTagType.ATTRIBUTE_VALUE, char)
                 if(inAttributeValue && char == '"')
@@ -114,11 +124,13 @@ class TagTypeDetector(firstCharOfXml: Char) {
         else if (actualTag.isTag(XmlTagType.COMMENT) && char == '-') this.typeToShow = XmlTagType.UNMACHED
         else if (this.typeToShow == XmlTagType.TAG_NAME && char == ' ') this.typeToShow = XmlTagType.UNMACHED
         else if (typeOfCurrent() == XmlTagType.TAG_VALUE.type && char == XmlSymbols.COMMENT.value) this.typeToShow = XmlTagType.TAG_VALUE
-
         else if (isItXmlSymbol(char)) this.typeToShow = XmlTagType.UNMACHED
         else this.typeToShow = type
     }
 
+    /**
+     * jeżeli wystąpi <? to początek prologu
+     */
     private fun isProlog(char: Char): Boolean {
         if (checked.last() == XmlSymbols.OPEN_TAG.value && char == XmlSymbols.PROLOG.value) {
             return true
@@ -126,10 +138,16 @@ class TagTypeDetector(firstCharOfXml: Char) {
         return false
     }
 
+    /**
+     * zakończenie prologu gdy ?>
+     */
     private fun isPrologEnd(char: Char): Boolean {
         return checked.last() == XmlSymbols.PROLOG.value && char == XmlSymbols.END_TAG.value
     }
 
+    /**
+     * pierwsza litera nazwy tegu musi spełniać określone warunki
+     */
     private fun isTagName(char: Char): Boolean {
         if (char == ' ') return false
         val matches = firstCharOfTagNameRegex.matches(char.toString())
@@ -139,6 +157,9 @@ class TagTypeDetector(firstCharOfXml: Char) {
         return false
     }
 
+    /**
+     * Tag kończący gdy wystąpi />
+     */
     private fun isCloseTag(char: Char): Boolean {
         if (char == XmlSymbols.SLASH.value && checked.last() == XmlSymbols.OPEN_TAG.value) {
             return true
@@ -153,6 +174,9 @@ class TagTypeDetector(firstCharOfXml: Char) {
         return false
     }
 
+    /**
+     * komentarz gdy wystąpi <!
+     */
     private fun isComment(char: Char): Boolean {
         if (checked.last() == XmlSymbols.OPEN_TAG.value && char == XmlSymbols.COMMENT.value) {
             return true
@@ -160,6 +184,9 @@ class TagTypeDetector(firstCharOfXml: Char) {
         return false
     }
 
+    /**
+     * koniec komentarza gdy ->
+     */
     private fun isCommentClose(char: Char): Boolean {
         return char == XmlSymbols.END_TAG.value && checked.last() == '-'
     }

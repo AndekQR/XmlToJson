@@ -73,8 +73,8 @@ class XmlParser {
         val treeNode = TreeNode()
 
         for (i in 1 until xml.length) {
-            detector.checkV2(xml[i])
-//            println(xml[i] + ": " + detector.typeOfCurrent() + "(actualType: " + detector.actualTag.get().type + ")")
+            detector.check(xml[i])
+
             when (detector.typeOfCurrent()) {
                 PROLOG.type,
                 TAG_NAME.type,
