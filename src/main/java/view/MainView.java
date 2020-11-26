@@ -179,7 +179,7 @@ public class MainView {
             if (choosedFile != null) {
                 fileToWrite = new File(folder.getAbsolutePath() + "/" + this.mainController.getNameWithoutExtension(choosedFile) + ".json");
             } else {
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd|HH:mm:ss");
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
                 LocalDateTime now = LocalDateTime.now();
                 fileToWrite = new File(folder.getAbsolutePath() + "/" + dtf.format(now) + ".json");
             }
