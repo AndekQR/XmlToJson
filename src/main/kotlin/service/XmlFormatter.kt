@@ -7,7 +7,6 @@ import javax.xml.transform.TransformerException
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
-import kotlin.jvm.Throws
 
 class XmlFormatter {
     /*

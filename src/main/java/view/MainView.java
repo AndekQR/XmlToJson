@@ -10,7 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.TextAlignment;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -19,6 +19,8 @@ import org.xml.sax.SAXException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -68,7 +70,7 @@ public class MainView {
             this.jsonViewer = this.jsonViewComponent("");
             this.xmlViewer = this.xmlViewComponent("");
             this.jsonViewer.setEditable(false);
-            hBox.getChildren().addAll(makeLabeledTextArea("XML file",xmlViewer), makeLabeledTextArea("Converted to JSON", jsonViewer));
+            hBox.getChildren().addAll(makeLabeledTextArea("XML file", xmlViewer), makeLabeledTextArea("Converted to JSON", jsonViewer));
             Platform.runLater(() -> {
                 this.container.setCenter(hBox);
             });
@@ -106,6 +108,7 @@ public class MainView {
 
         chooseFileButton.setOnAction((ActionEvent event) -> {
             File file = showFileChooser("*.xml");
+            this.mainController.setChoosedFile(file);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             executorService.submit(() -> {
                 long startTime = System.currentTimeMillis();
@@ -113,8 +116,8 @@ public class MainView {
                 this.errorArea.clear();
                 String json = "";
                 try {
-                    try{
-                        if(this.onLineJson) {
+                    try {
+                        if (this.onLineJson) {
                             json = this.mainController.getJson(file.getAbsolutePath(), false);
                         } else {
                             json = this.mainController.getJson(file.getAbsolutePath(), true);
@@ -133,7 +136,7 @@ public class MainView {
                 }
                 this.jsonViewer.setText(json);
                 long stopTime = System.currentTimeMillis();
-                this.errorArea.appendText("\nExecution time: "+(stopTime - startTime)+" ms");
+                this.errorArea.appendText("\nExecution time: " + (stopTime - startTime) + " ms");
             });
             executorService.shutdown();
         });
@@ -143,6 +146,7 @@ public class MainView {
             if (!xmlText.isEmpty()) {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(() -> {
+                    this.mainController.setChoosedFile(null);
                     long start = System.currentTimeMillis();
                     this.jsonViewer.clear();
                     this.errorArea.clear();
@@ -161,7 +165,7 @@ public class MainView {
                     }
                     this.jsonViewer.setText(json);
                     long stop = System.currentTimeMillis();
-                    this.errorArea.setText("Execution time: "+(stop-start)+" ms");
+                    this.errorArea.setText("Execution time: " + (stop - start) + " ms");
                 });
 
                 executorService.shutdown();
@@ -169,9 +173,18 @@ public class MainView {
         });
 
         saveJsonFile.setOnAction((event) -> {
-            File file = this.showFileChooser("*.txt", "*.json");
+            File folder = this.showFolderChooser();
+            File choosedFile = this.mainController.getChoosedFile();
+            File fileToWrite;
+            if (choosedFile != null) {
+                fileToWrite = new File(folder.getAbsolutePath() + "/" + this.mainController.getNameWithoutExtension(choosedFile) + ".json");
+            } else {
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd|HH:mm:ss");
+                LocalDateTime now = LocalDateTime.now();
+                fileToWrite = new File(folder.getAbsolutePath() + "/" + dtf.format(now) + ".json");
+            }
             try {
-                FileWriter fileWriter = new FileWriter(file);
+                FileWriter fileWriter = new FileWriter(fileToWrite);
                 fileWriter.write(this.jsonViewer.getText());
                 fileWriter.close();
             } catch (IOException e) {
@@ -189,7 +202,7 @@ public class MainView {
         oneLineJsonCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             this.onLineJson = newValue;
         });
-        oneLineJsonCheckbox.setPadding(new Insets(0, 0,0,20));
+        oneLineJsonCheckbox.setPadding(new Insets(0, 0, 0, 20));
 
         leftHbox.getChildren().addAll(chooseFileButton, parseButton, saveJsonFile, oneLineJsonCheckbox);
         leftHbox.setAlignment(Pos.BASELINE_LEFT);
@@ -210,6 +223,11 @@ public class MainView {
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML files", extensions));
         File file = fileChooser.showOpenDialog(this.stage);
         return file;
+    }
+
+    private File showFolderChooser() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        return directoryChooser.showDialog(this.stage);
     }
 
     private TextArea jsonViewComponent(String json) {

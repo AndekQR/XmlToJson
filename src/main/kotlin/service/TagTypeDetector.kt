@@ -73,7 +73,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
             //wyjście z tego tagu relizowane jest przez special conditions
             XmlTagType.ATTRIBUTE_VALUE -> {
                 setTypeToShow(XmlTagType.ATTRIBUTE_VALUE, char)
-                if(inAttributeValue && char == '"')
+                if (inAttributeValue && char == '"')
                     inAttributeValue = false
                 if (isAttributeName(char) && !inAttributeValue) {
                     actualTag.set(XmlTagType.ATTRIBUTE_NAME)
@@ -120,10 +120,12 @@ class TagTypeDetector(firstCharOfXml: Char) {
     private fun setTypeToShow(type: XmlTagType, char: Char) {
         // special conditions
         if ((char == '=' || char == '"')) this.typeToShow = XmlTagType.UNMACHED
-        else if (actualTag.isTag(XmlTagType.TAG_NAME) && (char == XmlSymbols.SLASH.value)) this.typeToShow = XmlTagType.INLINE_CLOSE_TAG
+        else if (actualTag.isTag(XmlTagType.TAG_NAME) && (char == XmlSymbols.SLASH.value)) this.typeToShow =
+            XmlTagType.INLINE_CLOSE_TAG
         else if (actualTag.isTag(XmlTagType.COMMENT) && char == '-') this.typeToShow = XmlTagType.UNMACHED
         else if (this.typeToShow == XmlTagType.TAG_NAME && char == ' ') this.typeToShow = XmlTagType.UNMACHED
-        else if (typeOfCurrent() == XmlTagType.TAG_VALUE.type && char == XmlSymbols.COMMENT.value) this.typeToShow = XmlTagType.TAG_VALUE
+        else if (typeOfCurrent() == XmlTagType.TAG_VALUE.type && char == XmlSymbols.COMMENT.value) this.typeToShow =
+            XmlTagType.TAG_VALUE
         else if (isItXmlSymbol(char)) this.typeToShow = XmlTagType.UNMACHED
         else this.typeToShow = type
     }
@@ -203,7 +205,7 @@ class TagTypeDetector(firstCharOfXml: Char) {
 
     private fun isAttributeName(char: Char): Boolean {
         val matches = this.firstCharOfTagNameRegex.matches(char.toString())
-        if (checked.last() == ' ' && matches ) {
+        if (checked.last() == ' ' && matches) {
             return true
         }
         return false

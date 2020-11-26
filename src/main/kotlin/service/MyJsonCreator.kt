@@ -8,7 +8,7 @@ import java.util.stream.Collectors
 class MyJsonCreator(private val treeNode: TreeNode) {
 
     private var json: StringBuilder = StringBuilder()
-    private var wasLastCloseBrace: Boolean = false;
+    private var wasLastCloseBrace: Boolean = false
 
     init {
         this.generateJSON()

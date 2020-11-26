@@ -8,12 +8,12 @@ import service.XmlParser
 import service.XmlValidator
 import java.io.File
 import javax.xml.transform.TransformerException
-import kotlin.jvm.Throws
 
 
 class MainController {
 
     private val xmlParser = XmlParser()
+    var choosedFile: File? = null
 
     @Throws(StackOverflowError::class)
     fun getJson(path: String, prettyFormat: Boolean): String {
@@ -39,8 +39,8 @@ class MainController {
     fun getXmlString(): String {
         return try {
             XmlFormatter.format(xmlParser.getXmlString(false))
-        }catch (e: TransformerException){
-            this.xmlParser.getXmlString(true);
+        } catch (e: TransformerException) {
+            this.xmlParser.getXmlString(true)
         }
     }
 
@@ -53,4 +53,6 @@ class MainController {
     fun validateXml(file: File) {
         XmlValidator.validate(file)
     }
+
+    fun getNameWithoutExtension(file: File) = file.nameWithoutExtension
 }
